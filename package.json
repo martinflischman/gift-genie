@@ -1,7 +1,7 @@
 {
-  "name": "aiei-1.3",
+  "name": "gift-genie",
   "version": "0.0.1",
-  "description": "1.3 Importing & Creating The OpenAI Client",
+  "description": "AI gift suggestion app using Gemini API",
   "main": "index.js",
   "type": "module",
   "scripts": {
