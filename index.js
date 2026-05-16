@@ -6,6 +6,7 @@ checkEnvironment();
 const openai = new OpenAI({
   apiKey: process.env.AI_KEY,
   baseURL: process.env.AI_URL,
+  dangerouslyAllowBrowser: true,
 });
 
 // Get UI elements
@@ -32,17 +33,26 @@ const messages = [
 ];
 
 async function handleGiftRequest(e) {
-  // Prevent default form submission
   e.preventDefault();
 
-  // Get user input, trim whitespace, exit if empty
   const userPrompt = userInput.value.trim();
   if (!userPrompt) return;
 
-  // Set loading state
+  messages.push({
+    role: "user",
+    content: userPrompt,
+  });
+
   setLoading(true);
 
-  // Clear loading state
+  const response = await openai.chat.completions.create({
+    model: process.env.AI_MODEL,
+    messages,
+  });
+
+  const giftSuggestions = response.choices[0].message.content;
+  outputContent.textContent = giftSuggestions;
+
   setLoading(false);
 }
 
