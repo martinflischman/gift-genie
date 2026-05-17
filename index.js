@@ -45,15 +45,20 @@ async function handleGiftRequest(e) {
 
   setLoading(true);
 
-  const response = await openai.chat.completions.create({
-    model: process.env.AI_MODEL,
-    messages,
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.AI_MODEL,
+      messages,
+    });
 
-  const giftSuggestions = response.choices[0].message.content;
-  outputContent.textContent = giftSuggestions;
-
-  setLoading(false);
+    const giftSuggestions = response.choices[0].message.content;
+    outputContent.textContent = giftSuggestions;
+  } catch (error) {
+    console.error(error);
+    outputContent.textContent = "Something went wrong. Please try again.";
+  } finally {
+    setLoading(false);
+  }
 }
 
 start();
