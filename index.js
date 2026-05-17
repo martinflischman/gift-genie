@@ -55,7 +55,8 @@ async function handleGiftRequest(e) {
     outputContent.textContent = giftSuggestions;
   } catch (error) {
     console.error(error);
-    outputContent.textContent = "Something went wrong. Please try again.";
+    outputContent.textContent =
+      "Sorry, I can't access what I need right now. Please try again.";
   } finally {
     setLoading(false);
   }
