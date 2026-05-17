@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { marked } from "marked";
 import { autoResizeTextarea, checkEnvironment, setLoading } from "./utils.js";
 checkEnvironment();
 
@@ -52,7 +53,7 @@ async function handleGiftRequest(e) {
     });
 
     const giftSuggestions = response.choices[0].message.content;
-    outputContent.textContent = giftSuggestions;
+    outputContent.innerHTML = marked.parse(giftSuggestions);
   } catch (error) {
     console.error(error);
     outputContent.textContent =

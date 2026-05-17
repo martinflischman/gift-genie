@@ -8,6 +8,7 @@
     "start": "vite"
   },
   "dependencies": {
+    "marked": "^18.0.3",
     "openai": "^6.15.0"
   },
   "devDependencies": {
