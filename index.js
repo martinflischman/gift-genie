@@ -10,16 +10,19 @@ import {
 
 checkEnvironment();
 
+// Initialize an OpenAI client for your provider using env vars
 const openai = new OpenAI({
   apiKey: process.env.AI_KEY,
   baseURL: process.env.AI_URL,
   dangerouslyAllowBrowser: true,
 });
 
+// Get UI elements
 const giftForm = document.getElementById("gift-form");
 const userInput = document.getElementById("user-input");
 const outputContent = document.getElementById("output-content");
 
+// Initialize messages array with system prompt
 const messages = [
   {
     role: "system",
@@ -33,38 +36,54 @@ const messages = [
 ];
 
 function start() {
+  // Setup UI event listeners
   userInput.addEventListener("input", () => autoResizeTextarea(userInput));
   giftForm.addEventListener("submit", handleGiftRequest);
 }
 
 async function handleGiftRequest(e) {
+  // Prevent default form submission
   e.preventDefault();
 
+  // Get user input, trim whitespace, exit if empty
   const userPrompt = userInput.value.trim();
   if (!userPrompt) return;
 
+  // Set loading state
   setLoading(true);
 
+  // Add user message to global messages array
   messages.push({ role: "user", content: userPrompt });
 
   try {
+    // Send a streaming chat completions request
     const stream = await openai.chat.completions.create({
       model: process.env.AI_MODEL,
       messages,
       stream: true,
     });
 
-    showStream();
-
     let giftSuggestions = "";
 
+    // Show output container immediately for streaming feedback
+    showStream();
+
+    // Process each chunk as it arrives
     for await (const chunk of stream) {
       const chunkText = chunk.choices[0]?.delta?.content || "";
       giftSuggestions += chunkText;
-      outputContent.innerHTML = DOMPurify.sanitize(
-        marked.parse(giftSuggestions),
-      );
+
+      // Convert Markdown to HTML
+      const html = marked.parse(giftSuggestions);
+
+      // Sanitize the HTML
+      const safeHTML = DOMPurify.sanitize(html);
+
+      // Display the sanitized HTML
+      outputContent.innerHTML = safeHTML;
     }
+
+    console.log(giftSuggestions);
   } catch (error) {
     console.error(error);
     outputContent.textContent =
