@@ -51,14 +51,23 @@ async function handleGiftRequest(e) {
   });
 
   try {
-    const response = await openai.chat.completions.create({
+    // Send a streaming chat completions request
+    const stream = await openai.chat.completions.create({
       model: process.env.AI_MODEL,
       messages,
+      stream: true,
     });
 
-    const giftSuggestions = response.choices[0].message.content;
-    console.log(giftSuggestions);
-    outputContent.innerHTML = DOMPurify.sanitize(marked.parse(giftSuggestions));
+    let giftSuggestions = "";
+
+    // Process each chunk as it arrives
+    for await (const chunk of stream) {
+      const chunkText = chunk.choices[0]?.delta?.content || "";
+      giftSuggestions += chunkText;
+      outputContent.innerHTML = DOMPurify.sanitize(
+        marked.parse(giftSuggestions),
+      );
+    }
   } catch (error) {
     console.error(error);
     outputContent.textContent =
