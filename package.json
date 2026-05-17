@@ -8,6 +8,7 @@
     "start": "vite"
   },
   "dependencies": {
+    "dompurify": "^3.4.4",
     "marked": "^18.0.3",
     "openai": "^6.15.0"
   },

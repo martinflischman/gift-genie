@@ -1,6 +1,7 @@
 import OpenAI from "openai";
-import { marked } from "marked";
 import { autoResizeTextarea, checkEnvironment, setLoading } from "./utils.js";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 checkEnvironment();
 
 // Initialize an OpenAI client for your provider using env vars
@@ -27,6 +28,7 @@ const messages = [
     role: "system",
     content: `You are the Gift Genie!
     Make your gift suggestions thoughtful and practical.
+    The user will describe the gift's recipient.
     Your response must be under 100 words. 
     Skip intros and conclusions. 
     Only output gift suggestions.`,
@@ -39,12 +41,14 @@ async function handleGiftRequest(e) {
   const userPrompt = userInput.value.trim();
   if (!userPrompt) return;
 
+  // Set loading state
+  setLoading(true);
+
+  // Add user message to global messages array
   messages.push({
     role: "user",
     content: userPrompt,
   });
-
-  setLoading(true);
 
   try {
     const response = await openai.chat.completions.create({
@@ -53,7 +57,8 @@ async function handleGiftRequest(e) {
     });
 
     const giftSuggestions = response.choices[0].message.content;
-    outputContent.innerHTML = marked.parse(giftSuggestions);
+    console.log(giftSuggestions);
+    outputContent.innerHTML = DOMPurify.sanitize(marked.parse(giftSuggestions));
   } catch (error) {
     console.error(error);
     outputContent.textContent =
