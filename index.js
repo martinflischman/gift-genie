@@ -58,6 +58,9 @@ async function handleGiftRequest(e) {
       stream: true,
     });
 
+    // Clear loading and show output before streaming begins
+    setLoading(false);
+
     let giftSuggestions = "";
 
     // Process each chunk as it arrives
@@ -72,7 +75,6 @@ async function handleGiftRequest(e) {
     console.error(error);
     outputContent.textContent =
       "Sorry, I can't access what I need right now. Please try again.";
-  } finally {
     setLoading(false);
   }
 }
