@@ -140,12 +140,6 @@ A rechargeable LED lantern perfect for outdoor evenings around the fire.
   },
 ];
 
-function start() {
-  // Setup UI event listeners
-  userInput.addEventListener("input", () => autoResizeTextarea(userInput));
-  giftForm.addEventListener("submit", handleGiftRequest);
-}
-
 async function handleGiftRequest(e) {
   // Prevent default form submission
   e.preventDefault();
@@ -154,7 +148,7 @@ async function handleGiftRequest(e) {
   const userPrompt = userInput.value.trim();
   if (!userPrompt) return;
 
-  // Set loading state
+  // Set loading state (hides output, animates lamp)
   setLoading(true);
 
   // Add user message to global messages array
@@ -164,42 +158,55 @@ async function handleGiftRequest(e) {
   });
 
   try {
-    // Send a streaming chat completions request
+    // Enable streaming in the chat completions request
     const stream = await openai.chat.completions.create({
       model: process.env.AI_MODEL,
       messages,
       stream: true,
     });
 
-    let giftSuggestions = "";
-
     // Show output container immediately for streaming feedback
     showStream();
 
-    // Process each chunk as it arrives
+    // Accumulate the streamed response
+    let giftSuggestions = "";
+
+    // Iterate over streamed chunks as they arrive
     for await (const chunk of stream) {
       const chunkContent = chunk.choices[0]?.delta?.content;
       if (!chunkContent) continue;
+
+      // Append to accumulated response
       giftSuggestions += chunkContent;
 
-      // Convert Markdown to HTML
+      // Convert Markdown to HTML progressively
       const html = marked.parse(giftSuggestions);
 
-      // Sanitize the HTML
+      // Sanitize the HTML to prevent XSS attacks
       const safeHTML = DOMPurify.sanitize(html);
 
-      // Display the sanitized HTML
+      // Render progressively
       outputContent.innerHTML = safeHTML;
     }
 
     console.log(giftSuggestions);
   } catch (error) {
+    // Log the error for debugging
     console.error(error);
+
+    // Display friendly error message
     outputContent.textContent =
-      "Sorry, I can't access what I need right now. Please try again.";
+      "Sorry, I can't access what I need right now. Please try again in a bit.";
   } finally {
+    // Always clear loading state (shows output, resets lamp)
     setLoading(false);
   }
+}
+
+function start() {
+  // Setup UI event listeners
+  userInput.addEventListener("input", () => autoResizeTextarea(userInput));
+  giftForm.addEventListener("submit", handleGiftRequest);
 }
 
 start();
