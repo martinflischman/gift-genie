@@ -33,9 +33,10 @@ const messages = [
     Each gift must:
       - Have a clear heading
       - A short explanation of why it would work
-      - If a location or constraint is mentioned (e.g. airport, budget, country), include a short "How to get it" note tailored to that context
 
-    React to contextual clues like location, time pressure, or budget constraints and adapt your suggestions accordingly.
+    If the user mentions a location or a time constraint,
+    add another section under each gift that gives the user
+    a step by step guide on where and how they can get the gift.
 
     Skip intros and conclusions.
     Only output gift suggestions.
@@ -43,6 +44,99 @@ const messages = [
     End with a section with an H2 heading titled "Questions for you"
     that contains follow-ups that would help improve the
     gift suggestions`,
+  },
+  {
+    role: "user",
+    content:
+      "My friend in Cape Town loves the outdoors, good food, traveling and live music. What can I get him as a Christmas gift, nothing more than R1000.",
+  },
+  {
+    role: "assistant",
+    content: `### Guided Hike Experience Voucher
+
+A voucher for a guided hike up Lion's Head or Table Mountain with a local guide — perfect for someone who loves the outdoors and Cape Town's natural beauty.
+
+**How to get it:**
+1. Visit GetYourGuide.com or Airbnb Experiences and search "Cape Town hiking".
+2. Filter by price under R500 to leave room for another gift.
+3. Purchase a voucher and print or email it as the gift.
+
+---
+
+### Craft Beer & Braai Snack Hamper
+
+A curated hamper of local Cape Town craft beers paired with artisan biltong and snacks — great for a foodie who loves local flavour.
+
+**How to get it:**
+1. Visit Faithful to Nature or The Biltong Shop online.
+2. Search for gift hampers under R400.
+3. Add to cart and select delivery to your address or directly to your friend.
+
+---
+
+### Live Music Event Tickets
+
+Tickets to an upcoming live music event in Cape Town — check what's on at Kirstenbosch, The Assembly, or Shimmy Beach Club.
+
+**How to get it:**
+1. Visit Webtickets.co.za or Quicket.co.za.
+2. Search for upcoming Cape Town live music events.
+3. Filter by date and price and purchase tickets directly.
+
+---
+
+## Questions for you
+1. What kind of music does your friend enjoy?
+2. Does he prefer experiences or physical gifts?
+3. Is there a specific area of Cape Town he frequents?`,
+  },
+  {
+    role: "user",
+    content:
+      "online shopping. under R500. gift for my dad who loves braaiing and the outdoors",
+  },
+  {
+    role: "assistant",
+    content: `### Braai Spice Gift Set
+
+A curated set of wood-fired rubs and marinades built for someone who takes their braai seriously. Practical, personal, and always appreciated.
+
+**How to get it:**
+1. Go to Faithful to Nature or Woolworths online.
+2. Search for "braai spice set" or "BBQ rub gift set".
+3. Filter by price under R500.
+4. Add to cart and select standard or express delivery.
+
+---
+
+### Silicone Braai Gloves
+
+Heat-resistant gloves designed for handling hot grates and coals — far better than a folded cloth.
+
+**How to get it:**
+1. Visit Takealot.com and search "silicone braai gloves".
+2. Filter by Prime delivery if you need it quickly.
+3. Choose a highly rated pair under R200 to stay in budget.
+4. Proceed to checkout and select your delivery address.
+
+---
+
+### Portable Camping Lantern
+
+A rechargeable LED lantern perfect for outdoor evenings around the fire.
+
+**How to get it:**
+1. Search "camping lantern rechargeable" on Takealot or Leroy Merlin online.
+2. Filter by price — good options available between R150–R400.
+3. Check reviews and battery life before purchasing.
+4. Add to cart and complete checkout.
+
+---
+
+## Questions for you
+1. Does your dad braai with wood, charcoal, or gas?
+2. Does he camp or hike as well, or mainly braai at home?
+3. Would you prefer a single quality item or a few smaller gifts?`,
   },
 ];
 
@@ -64,7 +158,10 @@ async function handleGiftRequest(e) {
   setLoading(true);
 
   // Add user message to global messages array
-  messages.push({ role: "user", content: userPrompt });
+  messages.push({
+    role: "user",
+    content: `Generate fresh gift ideas for this new user request: ${userPrompt}`,
+  });
 
   try {
     // Send a streaming chat completions request
@@ -81,8 +178,9 @@ async function handleGiftRequest(e) {
 
     // Process each chunk as it arrives
     for await (const chunk of stream) {
-      const chunkText = chunk.choices[0]?.delta?.content || "";
-      giftSuggestions += chunkText;
+      const chunkContent = chunk.choices[0]?.delta?.content;
+      if (!chunkContent) continue;
+      giftSuggestions += chunkContent;
 
       // Convert Markdown to HTML
       const html = marked.parse(giftSuggestions);
