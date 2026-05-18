@@ -35,7 +35,7 @@ const messages = [
     
     Provide 3-5 gift suggestions.
     
-    End with a ## Questions for you section with 2-3 follow-up questions that would help you improve the recommendations.
+    You MUST always end with a ## Questions for you section with 2-3 follow-up questions that would help you improve the recommendations. This section is required.
     
     Skip intros and conclusions.`,
   },
