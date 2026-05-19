@@ -22,123 +22,33 @@ const giftForm = document.getElementById("gift-form");
 const userInput = document.getElementById("user-input");
 const outputContent = document.getElementById("output-content");
 
-// Initialize messages array with system prompt
-const messages = [
-  {
-    role: "system",
-    content: `You are the Gift Genie!
-    Make your gift suggestions thoughtful and practical.
-    The user will describe the gift's recipient.
-    Your response must be in structured Markdown.
-    Each gift must:
-      - Have a clear heading
-      - A short explanation of why it would work
+function start() {
+  // Setup UI event listeners
+  userInput.addEventListener("input", () => autoResizeTextarea(userInput));
+  giftForm.addEventListener("submit", handleGiftRequest);
+}
 
-    If the user mentions a location or a time constraint,
-    add another section under each gift that gives the user
-    a step by step guide on where and how they can get the gift.
+const systemPrompt = `You are the Gift Genie.
 
-    Skip intros and conclusions.
-    Only output gift suggestions.
-    
-    End with a section with an H2 heading titled "Questions for you"
-    that contains follow-ups that would help improve the
-    gift suggestions`,
-  },
-  {
-    role: "user",
-    content:
-      "My friend in Cape Town loves the outdoors, good food, traveling and live music. What can I get him as a Christmas gift, nothing more than R1000.",
-  },
-  {
-    role: "assistant",
-    content: `### Guided Hike Experience Voucher
+You generate gift ideas that feel thoughtful, specific, and genuinely useful.
+Use your web search capability to find real, currently available products and experiences.
+Include specific product names, stores, and up-to-date pricing where possible.
+Your output must be in structured Markdown.
+Do not write introductions or conclusions.
+Start directly with the gift suggestions.
 
-A voucher for a guided hike up Lion's Head or Table Mountain with a local guide — perfect for someone who loves the outdoors and Cape Town's natural beauty.
+Each gift must:
+- Have a clear heading
+- Include a short explanation of why it works
+- Include a real, specific place to buy it with an approximate current price
 
-**How to get it:**
-1. Visit GetYourGuide.com or Airbnb Experiences and search "Cape Town hiking".
-2. Filter by price under R500 to leave room for another gift.
-3. Purchase a voucher and print or email it as the gift.
+If the user mentions a location, situation, or constraint,
+adapt the gift ideas and add another short section
+under each gift that guides the user to get the gift in that
+constrained context.
 
----
-
-### Craft Beer & Braai Snack Hamper
-
-A curated hamper of local Cape Town craft beers paired with artisan biltong and snacks — great for a foodie who loves local flavour.
-
-**How to get it:**
-1. Visit Faithful to Nature or The Biltong Shop online.
-2. Search for gift hampers under R400.
-3. Add to cart and select delivery to your address or directly to your friend.
-
----
-
-### Live Music Event Tickets
-
-Tickets to an upcoming live music event in Cape Town — check what's on at Kirstenbosch, The Assembly, or Shimmy Beach Club.
-
-**How to get it:**
-1. Visit Webtickets.co.za or Quicket.co.za.
-2. Search for upcoming Cape Town live music events.
-3. Filter by date and price and purchase tickets directly.
-
----
-
-## Questions for you
-1. What kind of music does your friend enjoy?
-2. Does he prefer experiences or physical gifts?
-3. Is there a specific area of Cape Town he frequents?`,
-  },
-  {
-    role: "user",
-    content:
-      "online shopping. under R500. gift for my dad who loves braaiing and the outdoors",
-  },
-  {
-    role: "assistant",
-    content: `### Braai Spice Gift Set
-
-A curated set of wood-fired rubs and marinades built for someone who takes their braai seriously. Practical, personal, and always appreciated.
-
-**How to get it:**
-1. Go to Faithful to Nature or Woolworths online.
-2. Search for "braai spice set" or "BBQ rub gift set".
-3. Filter by price under R500.
-4. Add to cart and select standard or express delivery.
-
----
-
-### Silicone Braai Gloves
-
-Heat-resistant gloves designed for handling hot grates and coals — far better than a folded cloth.
-
-**How to get it:**
-1. Visit Takealot.com and search "silicone braai gloves".
-2. Filter by Prime delivery if you need it quickly.
-3. Choose a highly rated pair under R200 to stay in budget.
-4. Proceed to checkout and select your delivery address.
-
----
-
-### Portable Camping Lantern
-
-A rechargeable LED lantern perfect for outdoor evenings around the fire.
-
-**How to get it:**
-1. Search "camping lantern rechargeable" on Takealot or Leroy Merlin online.
-2. Filter by price — good options available between R150–R400.
-3. Check reviews and battery life before purchasing.
-4. Add to cart and complete checkout.
-
----
-
-## Questions for you
-1. Does your dad braai with wood, charcoal, or gas?
-2. Does he camp or hike as well, or mainly braai at home?
-3. Would you prefer a single quality item or a few smaller gifts?`,
-  },
-];
+After the gift ideas, include a section titled "Questions for you"
+with clarifying questions that would help improve the recommendations.`;
 
 async function handleGiftRequest(e) {
   // Prevent default form submission
@@ -151,43 +61,31 @@ async function handleGiftRequest(e) {
   // Set loading state (hides output, animates lamp)
   setLoading(true);
 
-  // Add user message to global messages array
-  messages.push({
-    role: "user",
-    content: `Generate fresh gift ideas for this new user request: ${userPrompt}`,
-  });
-
   try {
-    // Enable streaming in the chat completions request
-    const stream = await openai.chat.completions.create({
+    // Use Responses API with web_search_preview tool
+    const response = await openai.responses.create({
       model: process.env.AI_MODEL,
-      messages,
-      stream: true,
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [{ type: "web_search_preview" }],
     });
 
-    // Show output container immediately for streaming feedback
+    // Show output container
     showStream();
 
-    // Accumulate the streamed response
-    let giftSuggestions = "";
+    // Get the response text
+    const giftSuggestions = response.output_text;
 
-    // Iterate over streamed chunks as they arrive
-    for await (const chunk of stream) {
-      const chunkContent = chunk.choices[0]?.delta?.content;
-      if (!chunkContent) continue;
+    // Convert Markdown to HTML
+    const html = marked.parse(giftSuggestions);
 
-      // Append to accumulated response
-      giftSuggestions += chunkContent;
+    // Sanitize the HTML to prevent XSS attacks
+    const safeHTML = DOMPurify.sanitize(html);
 
-      // Convert Markdown to HTML progressively
-      const html = marked.parse(giftSuggestions);
-
-      // Sanitize the HTML to prevent XSS attacks
-      const safeHTML = DOMPurify.sanitize(html);
-
-      // Render progressively
-      outputContent.innerHTML = safeHTML;
-    }
+    // Render the output
+    outputContent.innerHTML = safeHTML;
 
     console.log(giftSuggestions);
   } catch (error) {
@@ -201,12 +99,6 @@ async function handleGiftRequest(e) {
     // Always clear loading state (shows output, resets lamp)
     setLoading(false);
   }
-}
-
-function start() {
-  // Setup UI event listeners
-  userInput.addEventListener("input", () => autoResizeTextarea(userInput));
-  giftForm.addEventListener("submit", handleGiftRequest);
 }
 
 start();
