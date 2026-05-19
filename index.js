@@ -45,10 +45,7 @@ Each gift must:
 If the user mentions a location, situation, or constraint,
 adapt the gift ideas and add another short section
 under each gift that guides the user to get the gift in that
-constrained context.
-
-After the gift ideas, include a section titled "Questions for you"
-with clarifying questions that would help improve the recommendations.`;
+constrained context.`;
 
 async function handleGiftRequest(e) {
   // Prevent default form submission
@@ -86,10 +83,7 @@ async function handleGiftRequest(e) {
 
     // Render the output
     outputContent.innerHTML = safeHTML;
-
-    console.log(giftSuggestions);
   } catch (error) {
-    // Log the error for debugging
     console.error(error);
 
     // Display friendly error message
